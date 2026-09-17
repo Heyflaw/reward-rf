@@ -115,12 +115,9 @@ function header(ctx, report, jitter) {
   ctx.fillStyle = INK.bone;
   ctx.font = `26px ${DATA}`;
   ctx.fillText('REWARDS CARD', MARGIN, 104);
-  ctx.fillStyle = INK.smoke;
-  ctx.font = `19px ${DATA_LIGHT}`;
-  ctx.fillText('what this wallet earns from its Rare Friends', MARGIN, 140);
   // Un filet plein sous l'en-tête : la carte commence là.
   ctx.fillStyle = INK.bone;
-  ctx.fillRect(MARGIN, 172, CARD_W - MARGIN * 2, 5);
+  ctx.fillRect(MARGIN, 136, CARD_W - MARGIN * 2, 5);
   ctx.restore();
 
   sticker(ctx, {

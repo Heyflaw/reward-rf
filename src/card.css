@@ -136,9 +136,9 @@ input:focus { outline: none; border-color: var(--lime); }
 .stage { max-width: 720px; margin: 0 auto; }
 
 .sheet {
+  /* Pas d'ombre portée : décalée en bas à droite sur un fond sombre, elle se
+     lisait comme un cadre gris mal aligné plutôt que comme un relief. */
   margin: 0 0 24px;
-  /* La carte est posée sur la page, pas encadrée : une ombre franche suffit. */
-  filter: drop-shadow(14px 14px 0 var(--ash));
 }
 
 canvas {

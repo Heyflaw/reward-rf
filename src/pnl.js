@@ -148,7 +148,7 @@ export async function scanWallet(address, { onProgress = () => {} } = {}) {
   const AM = CONTRACTS.ActivationManager;
   const fromBlock = '0x' + DEPLOY_BLOCK.toString(16);
 
-  onProgress('Recherche des Friends…');
+  onProgress('Looking for Friends…');
   // En série, pas en parallèle : deux rafales simultanées suffisent à faire
   // basculer le nœud public en mode refus.
   const genesisIds = await ownedIn(CONTRACTS.Genesis, addr);
@@ -159,7 +159,7 @@ export async function scanWallet(address, { onProgress = () => {} } = {}) {
     ...generationsIds.map((id) => ({ id, collection: 'Generations', address: CONTRACTS.Generations })),
   ];
 
-  onProgress(`${friends.length} Friend${friends.length > 1 ? 's' : ''} — lecture des positions…`);
+  onProgress(`${friends.length} Friend${friends.length > 1 ? 's' : ''} — reading positions…`);
 
   // Positions + récompenses de chaque Friend, puis l'état global (poids total,
   // streams, soldes, prix). Groupé, mais par paquets : un collectionneur à
@@ -180,7 +180,7 @@ export async function scanWallet(address, { onProgress = () => {} } = {}) {
     { to: CONTRACTS.PoolManager, data: SEL.extsload + POOL_SLOT0.slice(2) },
   ];
   const results = await chunkedCalls([...calls, ...tail], (done, total) => {
-    onProgress(`Lecture des positions ${done}/${total}…`);
+    onProgress(`Reading positions ${done}/${total}…`);
   });
 
   let cursor = 0;
@@ -205,7 +205,7 @@ export async function scanWallet(address, { onProgress = () => {} } = {}) {
   const bagWeth = big(results[cursor++]);
   const slot0 = results[cursor++];
 
-  onProgress('Historique des paiements…');
+  onProgress('Payment history…');
 
   // Ce qui a été payé pour activer : l'adresse est le 3ᵉ sujet indexé.
   const activations = await getLogs({
@@ -258,7 +258,7 @@ export async function scanWallet(address, { onProgress = () => {} } = {}) {
     claimsKnown = false;
   }
 
-  onProgress('Prix du RF…');
+  onProgress('RF price…');
   const prices = await readPrices(slot0);
   const block = await blockNumber();
 
