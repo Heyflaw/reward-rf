@@ -23,9 +23,9 @@ The card carries four numbers:
 | | source |
 |---|---|
 | **To claim** | `earned(asset, collection, tokenId)`, in WETH and RF |
-| **Pending** | `streams(asset).pending` × the wallet's weight share — the queue, not a holding |
+| **Pending** | everything not yet paid out × the weight share: the funded pot `streams(asset).pending`, plus the tail of the running stream, `rate` × (`finish` − now) |
 | **% of weight** | the sum of its `positions()` ÷ `totalWeight()` |
-| **APY** | (`streams(asset).rate` × weight share × 365 days) ÷ what was paid to activate |
+| **APY** | (what the current cycle has paid out + the whole queue) ÷ what was paid to activate, annualised over one `DURATION` |
 
 The readout below the card restates the same figures in words, plus the ones
 that have no place on the image: what was staked, the daily rate, what has
@@ -36,15 +36,30 @@ Uniswap v4 pool, read out of the `PoolManager`; the ETH price from CoinGecko.
 If either is missing the card falls back to RF amounts — it never guesses a
 price.
 
-### Three things to keep in mind
+### Four things to keep in mind
 
-- **The APY annualises the current rate** against a stake converted at *today's*
-  RF price. It is a snapshot, not a forecast and not accounting.
-- **Pending is not yours yet.** It is what the stream has provisioned and not
-  paid out, pro rata of weight — and the total weight moves.
+- **The APY is the generous reading.** It treats the entire undistributed queue
+  as if it landed in one seven-day cycle, then annualises that. It is the figure
+  rare-friends-cards.vercel.app shows and the one the community compares
+  against, which is why the card carries it. The sober reading — the current
+  drip rate annualised, several times smaller — sits in the readout under the
+  card.
+- Either way the stake is converted at *today's* RF price. It is a snapshot,
+  not a forecast and not accounting.
+- **Pending is not yours yet.** It is what has been funded and not paid out, pro
+  rata of weight — and the total weight moves.
 - The readout counts the whole history of the Friends held **today**, including
   what a previous owner may have claimed. That is the protocol's own model:
   rewards belong to the Friend, not to the address.
+
+### On the weight denominator
+
+`rare-friends-cards.vercel.app` divides by a total weight of about 860M, taken
+from `rarefriends.com`'s own metrics. The contract divides by `totalWeight()`,
+about 956M. Sampling `streams(RF).rewardPerWeight` 31 seconds apart and solving
+`rate × dt ÷ Δ(rewardPerWeight)` gives **956,451,489** — the contract's figure.
+This card uses that one, so its pending and APY read roughly 11% below the
+reference site's.
 
 ### The public node is not generous
 

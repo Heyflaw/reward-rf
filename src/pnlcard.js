@@ -207,8 +207,12 @@ function claim(ctx, report, jitter) {
     font: DATA,
   });
 
-  if (report.apy) {
-    const apy = `${compact(report.apy)}% APY`;
+  // On affiche la lecture large, celle de rare-friends-cards.vercel.app : toute
+  // la file d'attente rapportée à la mise, annualisée sur un cycle. C'est le
+  // chiffre auquel la communauté compare. Le débit du moment, bien plus sage,
+  // reste dans le relevé sous la carte.
+  if (report.apyCycle) {
+    const apy = `${compact(report.apyCycle)}% APY`;
     sticker(ctx, {
       text: apy, x: CARD_W / 2 + 20 + jitter(10), y: 1156,
       size: fit(ctx, apy, 72, 740, DATA), angle: 3 + jitter(1), font: DATA,
@@ -289,11 +293,11 @@ export function cardSummary(report) {
   if (report.usd) {
     lines.push(`≈ $${moneyExact(report.usd.claimable)} to claim, $${money(report.usd.pending)} pending`);
   }
-  if (report.apy) {
-    lines.push(`${round(report.apy)}% APY on ${round(report.paid.rf)} RF staked · current rate, annualised`);
-  }
   if (report.apyCycle) {
-    lines.push(`${round(report.apyCycle)}% if the whole queue paid out at this cycle's pace`);
+    lines.push(`${round(report.apyCycle)}% APY on ${round(report.paid.rf)} RF staked · whole queue over one cycle`);
+  }
+  if (report.apy) {
+    lines.push(`${round(report.apy)}% at the current drip rate alone`);
   }
   if (report.claimed.rf > 0.5) lines.push(`Already claimed ${round(report.claimed.rf)} RF`);
   if (!report.claimsKnown) lines.push('Claim history unavailable from the public node.');
