@@ -212,7 +212,9 @@ function claim(ctx, report, jitter) {
   // chiffre auquel la communauté compare. Le débit du moment, bien plus sage,
   // reste dans le relevé sous la carte.
   if (report.apyCycle) {
-    const apy = `${compact(report.apyCycle)}% APY`;
+    // En toutes lettres : « 13K% » ne se compare à rien, et c'est le chiffre
+    // que les gens recoupent avec les autres cartes.
+    const apy = `${round(report.apyCycle)}% APY`;
     sticker(ctx, {
       text: apy, x: CARD_W / 2 + 20 + jitter(10), y: 1156,
       size: fit(ctx, apy, 72, 740, DATA), angle: 3 + jitter(1), font: DATA,
