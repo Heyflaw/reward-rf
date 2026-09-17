@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>RARE FRIENDS — REWARDS CARD</title>
+<meta name="description" content="Paste a wallet, get a shareable card of what its Rare Friends earn." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%230c0c0c'/%3E%3Cpath fill='%23c6f53a' d='M0 0h8v1H0zM0 1h1v1H0zM2 1h4v1H2zM7 1h1v1H7zM0 2h1v1H0zM7 2h1v1H7zM0 3h1v1H0zM2 3h1v1H2zM5 3h1v1H5zM7 3h1v1H7zM0 4h2v1H0zM6 4h2v1H6zM0 5h2v1H0zM3 5h2v1H3zM6 5h2v1H6zM0 6h1v1H0zM7 6h1v1H7zM0 7h8v1H0z'/%3E%3C/svg%3E" />
+<link rel="preload" href="./fonts/Silkscreen-Bold.ttf" as="font" type="font/ttf" crossorigin />
+<link rel="preload" href="./fonts/Silkscreen-Regular.ttf" as="font" type="font/ttf" crossorigin />
+<link rel="preload" href="./fonts/SometypeMono-Bold.ttf" as="font" type="font/ttf" crossorigin />
+<link rel="preload" href="./fonts/SometypeMono-Regular.ttf" as="font" type="font/ttf" crossorigin />
+<link rel="stylesheet" href="./src/card.css" />
+</head>
+<body>
+
+<header class="top">
+  <h1>REWARDS<span>CARD</span></h1>
+  <p class="tag">
+    What your Friends have earned, what is queued up next, and at what rate.
+    Read straight off the chain, rendered as a sticker.
+  </p>
+</header>
+
+<form class="scan" id="scan" autocomplete="off">
+  <label for="addr">Wallet address</label>
+  <div class="scan-row">
+    <input id="addr" name="addr" type="text" spellcheck="false" placeholder="0x…" />
+    <button class="btn" id="go" type="submit">Scan</button>
+  </div>
+  <p class="status" id="status"></p>
+</form>
+
+<main class="stage" id="stage" hidden>
+  <figure class="sheet">
+    <canvas id="card" aria-label="Rewards card"></canvas>
+  </figure>
+
+  <div class="actions">
+    <button class="btn btn-key" id="dl" type="button">Download the PNG</button>
+    <button class="btn" id="share" type="button" hidden>Share</button>
+    <button class="btn" id="link" type="button">Copy the link</button>
+  </div>
+
+  <pre class="readout" id="readout"></pre>
+</main>
+
+<footer class="fine">
+  Read-only: no signature, no transaction, no key. The numbers come from the
+  Rare Friends contracts on Robinhood Chain, the RF price from the pool, the ETH
+  price from CoinGecko. Independent project, unaffiliated with the creators of
+  Rare Friends.
+</footer>
+
+<script type="module" src="./src/card.js"></script>
+</body>
+</html>

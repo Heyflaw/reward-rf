@@ -1,0 +1,11 @@
+{
+  "name": "rare-friends-rewards-card",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Colle un wallet, recupere une carte partageable de ce que ses Rare Friends rapportent.",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node server.mjs"
+  }
+}
