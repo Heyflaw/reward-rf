@@ -43,6 +43,12 @@ function compact(n) {
    côté, celui de la police jurerait avec les sprites. */
 const money = (n) => compact(Math.abs(n));
 
+/* Au centime tant que ça tient : c'est un montant qu'on vérifie ailleurs. */
+const moneyExact = (n) => {
+  const abs = Math.abs(n);
+  return abs < 1000 ? round(abs, 2) : compact(abs);
+};
+
 /* ------------------------------------------------------------------ */
 /* réduction à la largeur                                              */
 /* ------------------------------------------------------------------ */
@@ -166,13 +172,18 @@ function claim(ctx, report, jitter) {
   // c'est lui qui pèse le plus lourd dans ce qu'il y a à prendre.
   const weth = `+${round(report.claimable.weth, 4)} WETH`;
   const rf = `+${compact(report.claimable.rf)} RF`;
+  const lines = [
+    { text: 'TO CLAIM', size: 26, font: DATA },
+    { text: weth, size: fit(ctx, weth, 88, 840), font: DISPLAY, gap: 28 },
+    { text: rf, size: fit(ctx, rf, 48, 840), font: DISPLAY, gap: 22 },
+  ];
+  // Les deux jetons ne disent pas grand-chose l'un sans l'autre : c'est leur
+  // total en dollars qu'on lit en premier ailleurs, il a sa place ici.
+  if (report.usd) {
+    lines.push({ text: `= $${moneyExact(report.usd.claimable)}`, size: 40, font: DATA, gap: 26 });
+  }
   stack(ctx, {
-    lines: [
-      { text: 'TO CLAIM', size: 26, font: DATA },
-      { text: weth, size: fit(ctx, weth, 88, 840), font: DISPLAY, gap: 28 },
-      { text: rf, size: fit(ctx, rf, 48, 840), font: DISPLAY, gap: 22 },
-    ],
-    x: CARD_W / 2 + jitter(10), y: 830, angle: -3 + jitter(1),
+    lines, x: CARD_W / 2 + jitter(10), y: 820, angle: -3 + jitter(1),
     fill: INK.lime, ink: INK.black, padX: 64, padY: 42,
   });
 
@@ -180,18 +191,18 @@ function claim(ctx, report, jitter) {
   const pending = report.usd ? money(report.usd.pending) : `${compact(report.pending.rf)} RF`;
   const label = `${pending} PENDING`;
   const box = sticker(ctx, {
-    text: label, x: 404 + jitter(10), y: 1030,
+    text: label, x: 404 + jitter(10), y: 1058,
     size: fit(ctx, label, 38, 430, DATA), angle: 4 + jitter(2),
     style: 'band', fill: INK.black, ink: INK.bone, edge: INK.bone, font: DATA,
   });
   if (report.usd) {
     pixelGlyph(ctx, 'dollar', {
-      x: 404 - box.w / 2 - 20, y: 1024, cell: 6, color: INK.lime, angle: 4,
+      x: 404 - box.w / 2 - 20, y: 1052, cell: 6, color: INK.lime, angle: 4,
     });
   }
 
   sticker(ctx, {
-    text: `${round(report.share * 100, 2)}% OF WEIGHT`, x: 788 + jitter(10), y: 1038,
+    text: `${round(report.share * 100, 2)}% OF WEIGHT`, x: 788 + jitter(10), y: 1066,
     size: 22, angle: -5 + jitter(2), style: 'band', fill: INK.ash, ink: INK.bone,
     font: DATA,
   });
@@ -199,7 +210,7 @@ function claim(ctx, report, jitter) {
   if (report.apy) {
     const apy = `${compact(report.apy)}% APY`;
     sticker(ctx, {
-      text: apy, x: CARD_W / 2 + 20 + jitter(10), y: 1136,
+      text: apy, x: CARD_W / 2 + 20 + jitter(10), y: 1156,
       size: fit(ctx, apy, 72, 740, DATA), angle: 3 + jitter(1), font: DATA,
       style: 'band', fill: INK.bone, ink: INK.black,
     });
@@ -276,9 +287,14 @@ export function cardSummary(report) {
     `${round(report.share * 100, 2)}% of total weight · ${round(report.perDay.rf)} RF/day`,
   );
   if (report.usd) {
-    lines.push(`≈ $${money(report.usd.earned)} to claim, $${money(report.usd.pending)} pending`);
+    lines.push(`≈ $${moneyExact(report.usd.claimable)} to claim, $${money(report.usd.pending)} pending`);
   }
-  if (report.apy) lines.push(`${round(report.apy)}% APY on ${round(report.paid.rf)} RF staked`);
+  if (report.apy) {
+    lines.push(`${round(report.apy)}% APY on ${round(report.paid.rf)} RF staked · current rate, annualised`);
+  }
+  if (report.apyCycle) {
+    lines.push(`${round(report.apyCycle)}% if the whole queue paid out at this cycle's pace`);
+  }
   if (report.claimed.rf > 0.5) lines.push(`Already claimed ${round(report.claimed.rf)} RF`);
   if (!report.claimsKnown) lines.push('Claim history unavailable from the public node.');
   return lines.join('\n');

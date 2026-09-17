@@ -27,6 +27,7 @@ const SEL = {
   earned: '0x14bc8237',               // earned(address,address,uint256)
   totalWeight: '0x96c82e57',          // totalWeight()
   streams: '0x83699275',              // streams(address)
+  duration: '0x1be05289',             // DURATION()
   extsload: '0x1e2eaeaf',             // extsload(bytes32)
 };
 
@@ -173,6 +174,7 @@ export async function scanWallet(address, { onProgress = () => {} } = {}) {
   }
   const tail = [
     { to: AM, data: SEL.totalWeight },
+    { to: AM, data: SEL.duration },
     { to: AM, data: SEL.streams + arg(CONTRACTS.RF) },
     { to: AM, data: SEL.streams + arg(CONTRACTS.WETH) },
     { to: CONTRACTS.RF, data: SEL.balanceOf + arg(addr) },
@@ -199,6 +201,7 @@ export async function scanWallet(address, { onProgress = () => {} } = {}) {
     earnedWeth += f.earnedWeth;
   }
   const totalWeight = big(results[cursor++]);
+  const duration = big(results[cursor++]);
   const streamRf = words(results[cursor++]);     // pending, rate, finish, lastUpdate, …
   const streamWeth = words(results[cursor++]);
   const bagRf = big(results[cursor++]);
@@ -264,7 +267,7 @@ export async function scanWallet(address, { onProgress = () => {} } = {}) {
 
   return assemble({
     address: addr, block, friends, weight, totalWeight,
-    streamRf, streamWeth, bagRf, bagWeth, prices,
+    streamRf, streamWeth, duration, bagRf, bagWeth, prices,
     earnedRf, earnedWeth, claimedRf, claimedWeth, claimsKnown, paidRf,
   });
 }
@@ -286,10 +289,24 @@ function assemble(raw) {
   };
   const perDay = { rf: flow(raw.streamRf), weth: flow(raw.streamWeth) };
 
-  // `streams(asset).pending` : ce qui est déjà financé mais pas encore versé.
-  // Ce n'est pas acquis — c'est la file d'attente, au prorata du poids.
-  const queued = (stream) => units(stream[0]) * share;
+  // Tout ce qui n'a pas encore été versé, au prorata du poids : le pot financé
+  // mais pas encore mis en stream (`pending`), plus la fin du stream en cours
+  // (`rate` × le temps qu'il lui reste). Ce n'est pas acquis — le poids total
+  // bouge, et la part avec lui.
+  const left = (stream) => {
+    const [, rate, finish] = stream;
+    return rate && Number(finish) > now ? units(rate) * (Number(finish) - now) : 0;
+  };
+  const queued = (stream) => (units(stream[0]) + left(stream)) * share;
   const pending = { rf: queued(raw.streamRf), weth: queued(raw.streamWeth) };
+
+  // Ce que le cycle courant a déjà distribué : le budget d'un cycle
+  // (`rate` × `DURATION`) moins ce qu'il lui reste.
+  const dripped = (stream) => {
+    const rate = units(stream[1]);
+    return Math.max(0, rate * Number(raw.duration) - left(stream)) * share;
+  };
+  const cycle = { rf: dripped(raw.streamRf), weth: dripped(raw.streamWeth) };
 
   const paid = { rf: units(raw.paidRf) };
   const earned = {
@@ -302,8 +319,10 @@ function assemble(raw) {
   const { rfUsd, ethUsd } = raw.prices;
   const usd = rfUsd && ethUsd ? {
     paid: paid.rf * rfUsd,
+    claimable: claimable.rf * rfUsd + claimable.weth * ethUsd,
     earned: earned.rf * rfUsd + earned.weth * ethUsd,
     pending: pending.rf * rfUsd + pending.weth * ethUsd,
+    cycle: cycle.rf * rfUsd + cycle.weth * ethUsd,
     perDay: perDay.rf * rfUsd + perDay.weth * ethUsd,
     bag: units(raw.bagRf) * rfUsd + units(raw.bagWeth) * ethUsd,
   } : null;
@@ -318,7 +337,17 @@ function assemble(raw) {
   const dailyUsd = usd?.perDay ?? 0;
   const paybackDays = usd && dailyUsd > 0 ? Math.max(0, (usd.paid - usd.earned) / dailyUsd) : null;
   const paybackDaysRf = perDay.rf > 0 ? Math.max(0, (paid.rf - earned.rf) / perDay.rf) : null;
+  // Deux lectures du rendement, sur la même mise :
+  //   apy      — le débit du moment, annualisé. La mesure prudente.
+  //   apyCycle — (ce que le cycle a versé + toute la file d'attente) rapporté à
+  //              la mise, annualisé sur la durée d'un cycle. C'est la formule
+  //              de rare-friends-cards.vercel.app, bien plus généreuse : elle
+  //              compte le pot entier comme s'il tombait en une semaine.
   const apy = usd && usd.paid > 0 ? (dailyUsd * 365) / usd.paid * 100 : null;
+  const cycleDays = Number(raw.duration) / 86400;
+  const apyCycle = usd && usd.paid > 0 && cycleDays > 0
+    ? ((usd.cycle + usd.pending) / usd.paid) * (365 / cycleDays) * 100
+    : null;
 
   return {
     address: raw.address,
@@ -337,9 +366,9 @@ function assemble(raw) {
     activeCount: raw.friends.filter((f) => f.active).length,
     weight: units(raw.weight),
     share,
-    paid, earned, claimable, claimed, pending,
+    paid, earned, claimable, claimed, pending, cycle,
     claimsKnown: raw.claimsKnown, perDay, usd, prices: raw.prices,
     bag: { rf: units(raw.bagRf), weth: units(raw.bagWeth) },
-    paybackDays, paybackDaysRf, apy,
+    paybackDays, paybackDaysRf, apy, apyCycle,
   };
 }
